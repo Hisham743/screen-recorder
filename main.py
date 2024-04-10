@@ -11,43 +11,34 @@ from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 import sounddevice as sd
 import soundfile as sf
 import time
-
-
-def adjust_video_speed(original_path, target_duration):
-    # Load the original video clip
-    clip = VideoFileClip(original_path)
-
-    # Calculate the speed factor to achieve the target duration
-    speed_factor = clip.duration / target_duration
-
-    # Adjust the video speed
-    adjusted_clip = clip.fx(vfx.speedx, speed_factor)
-
-    # Write the adjusted video clip to a new file
-    output_path = "speed_adjusted_output.mp4"
-    adjusted_clip.write_videofile(output_path, logger=None)
+from proglog import ProgressBarLogger
 
 
 class ScreenRecorder:
     def __init__(self):
         self.root = ThemedTk(theme="black", themebg=True)
         self.start_stop_button = None
-        self.state_label = None
+        self.state_label = ttk.Label(self.root)
+        self.progess_bar = ttk.Progressbar(self.root, orient="horizontal")
         self.setup_gui()
+
         self.recording = False
         self.out = None
+        self.video_clip = None
         self.start_time = None
         self.duration = None
+        self.bar_logger = MyBarLogger(self.progess_bar)
 
     def setup_gui(self):
         self.root.title("Screen Recorder")
 
         self.start_stop_button = ttk.Button(
-            self.root, text="Start Recording", command=self.start_recording
+            self.root,
+            text="Start Recording",
+            command=self.start_recording,
+            padding=(9, 0),
         )
-        self.start_stop_button.pack(padx=10, pady=10)
-
-        self.state_label = ttk.Label(self.root)
+        self.start_stop_button.grid(row=0, column=0, padx=10, pady=10)
 
     def start_recording(self):
         self.start_time = datetime.now()
@@ -59,7 +50,7 @@ class ScreenRecorder:
         threading.Thread(target=self.record_system_audio, daemon=True).start()
 
         self.state_label.config(text="Recording...")
-        self.state_label.pack(pady=(0, 5))
+        self.state_label.grid(row=2, column=0, pady=(0, 5))
         self.root.after(3000, self.update_timer)
 
     def update_timer(self):
@@ -107,26 +98,37 @@ class ScreenRecorder:
         write_file = "temp_output.mp3"
         sf.write(write_file, myrecording[: int(self.duration * fs)], fs)
 
+    def adjust_video_speed(self, target_duration):
+        # Load the original video clip
+        self.video_clip = VideoFileClip("temp_output.mp4")
+
+        # Calculate the speed factor to achieve the target duration
+        speed_factor = self.video_clip.duration / target_duration
+
+        # Adjust the video speed
+        self.video_clip = self.video_clip.fx(vfx.speedx, speed_factor)
+
     def choose_file_path_and_save(self):
         output_path = filedialog.asksaveasfilename(
             defaultextension=".mp4", filetypes=[("MP4 files", "*.mp4")]
         )
 
         self.state_label.config(text="Processing...")
-        self.state_label.pack(pady=(0, 5))
+        self.state_label.grid(row=2, column=0, pady=(0, 5))
+        self.progess_bar.grid(row=1, column=0, pady=(0, 5))
 
-        adjust_video_speed("temp_output.mp4", self.duration)
+        self.adjust_video_speed(self.duration)
 
-        video_clip = VideoFileClip("speed_adjusted_output.mp4")
         audio_clip = AudioFileClip("temp_output.mp3")
-        video_clip = video_clip.set_audio(audio_clip)
-        video_clip.write_videofile("final_output.mp4", logger=None)
+        self.video_clip = self.video_clip.set_audio(audio_clip)
+        self.video_clip.write_videofile(
+            "final_output.mp4", preset="ultrafast", logger=self.bar_logger
+        )
 
-        video_clip.close()
+        self.video_clip.close()
         audio_clip.close()
 
         for filepath in [
-            "speed_adjusted_output.mp4",
             "temp_output.mp3",
             "temp_output.mp4",
         ]:
@@ -143,8 +145,20 @@ class ScreenRecorder:
         else:
             print("No file path selected.")
 
+        self.progess_bar.grid_forget()
         self.state_label.config(text="Done!")
-        self.root.after(3000, self.state_label.pack_forget)
+        self.root.after(3000, self.state_label.grid_forget)
+
+
+class MyBarLogger(ProgressBarLogger):
+    def __init__(self, progress_bar):
+        super().__init__()
+        self.progress_bar = progress_bar
+
+    def bars_callback(self, bar, attr, value, old_value=None):
+        # Every time the logger progress is updated, this function is called
+        percentage = (value / self.bars[bar]["total"]) * 100
+        self.progress_bar.config(value=percentage)
 
 
 if __name__ == "__main__":
