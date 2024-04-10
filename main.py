@@ -25,7 +25,7 @@ def adjust_video_speed(original_path, target_duration):
 
     # Write the adjusted video clip to a new file
     output_path = "speed_adjusted_output.mp4"
-    adjusted_clip.write_videofile(output_path)
+    adjusted_clip.write_videofile(output_path, logger=None)
 
 
 class ScreenRecorder:
@@ -120,7 +120,7 @@ class ScreenRecorder:
         video_clip = VideoFileClip("speed_adjusted_output.mp4")
         audio_clip = AudioFileClip("temp_output.mp3")
         video_clip = video_clip.set_audio(audio_clip)
-        video_clip.write_videofile("final_output.mp4")
+        video_clip.write_videofile("final_output.mp4", logger=None)
 
         video_clip.close()
         audio_clip.close()
