@@ -19,7 +19,7 @@ class ScreenRecorder:
         self.root = ThemedTk(theme="black", themebg=True)
         self.start_stop_button = None
         self.state_label = ttk.Label(self.root)
-        self.progess_bar = ttk.Progressbar(self.root, orient="horizontal")
+        self.progress_bar = ttk.Progressbar(self.root, orient="horizontal")
         self.setup_gui()
 
         self.recording = False
@@ -27,7 +27,7 @@ class ScreenRecorder:
         self.video_clip = None
         self.start_time = None
         self.duration = None
-        self.bar_logger = MyBarLogger(self.progess_bar)
+        self.bar_logger = MyBarLogger(self.progress_bar)
 
     def setup_gui(self):
         self.root.title("Screen Recorder")
@@ -115,7 +115,7 @@ class ScreenRecorder:
 
         self.state_label.config(text="Processing...")
         self.state_label.grid(row=2, column=0, pady=(0, 5))
-        self.progess_bar.grid(row=1, column=0, pady=(0, 5))
+        self.progress_bar.grid(row=1, column=0, pady=(0, 5))
 
         self.adjust_video_speed(self.duration)
 
@@ -145,7 +145,7 @@ class ScreenRecorder:
         else:
             print("No file path selected.")
 
-        self.progess_bar.grid_forget()
+        self.progress_bar.grid_forget()
         self.state_label.config(text="Done!")
         self.root.after(3000, self.state_label.grid_forget)
 
